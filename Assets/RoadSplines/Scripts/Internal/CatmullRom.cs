@@ -14,7 +14,7 @@ public class CatmullRom
     }
 
 	//Old
-    public static Vector3 Interpolate(Vector3 start, Vector3 end, Vector3 tanPoint1, Vector3 tanPoint2, float t)
+    public static Vector3 Interpolate(Vector3 tanPoint1, Vector3 start, Vector3 end, Vector3 tanPoint2, float t)
     {
         // Catmull-Rom splines are Hermite curves with special tangent values.
         // Hermite curve formula:
@@ -31,7 +31,7 @@ public class CatmullRom
     }
 
 	//Old
-    public static Vector3 Interpolate(Vector3 start, Vector3 end, Vector3 tanPoint1, Vector3 tanPoint2, float t, out Vector3 tangent)
+    public static Vector3 Interpolate(Vector3 tanPoint1, Vector3 start, Vector3 end, Vector3 tanPoint2, float t, out Vector3 tangent)
     {
         // Calculate tangents
         // p'(t) = (6t² - 6t)p0 + (3t² - 4t + 1)m0 + (-6t² + 6t)p1 + (3t² - 2t)m1
@@ -39,7 +39,7 @@ public class CatmullRom
             + (3 * t * t - 4 * t + 1) * tanPoint1
             + (-6 * t * t + 6 * t) * end
             + (3 * t * t - 2 * t) * tanPoint2;
-        return Interpolate(start, end, tanPoint1, tanPoint2, t);
+        return Interpolate(tanPoint1, start, end, tanPoint2, t);
     }
 
 	public static Vector3 GetCatmullRomPosition(Vector3 tanPoint1, Vector3 start, Vector3 end, Vector3 tanPoint2, float t, out Vector3 tangent, float alpha = 0.5f)
@@ -82,7 +82,6 @@ public class CatmullRom
 	private static Vector3 CalculateTangent(float t, Vector3 c1, Vector3 c2, Vector3 c3)
 	{
 		float t2 = t * t;
-		return c1 + 2 * c2 * t + 3 * c3 * t2;
+		return c1 + (2 * c2 * t) + (3 * c3 * t2);
 	}
-
 }

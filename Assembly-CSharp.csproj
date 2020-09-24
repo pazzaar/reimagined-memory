@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{DEB60F68-FD4E-5414-1455-797A0D369460}</ProjectGuid>
+    <ProjectGuid>{135097B7-E2C0-7352-D6F0-08FB8971A820}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -83,12 +83,15 @@
     <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation\VoronoiMesh.cs" />
     <Compile Include="Assets\RoadSplines\MIConvexHull\Vertex.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\CurveImplementation.cs" />
+    <Compile Include="Assets\RoadSplines\Scripts\CurvePoint.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\EdgeExtruder.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Internal\CatmullRom.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Internal\CombineMeshes.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Internal\LowPolyConverter.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Internal\MeshMaker.cs" />
+    <Compile Include="Assets\RoadSplines\Scripts\RoadPointInfo.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\SplineEditor.cs" />
+    <Compile Include="Assets\RoadSplines\Scripts\Utils.cs" />
     <Compile Include="Assets\Scripts\RaceTrack\TrackCreator.cs" />
     <Compile Include="Assets\Scripts\RaceTrack\TrackEditor.cs" />
     <Compile Include="Assets\Scripts\RaceTrack\TrackPoint.cs" />
@@ -282,7 +285,7 @@
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.4.1f1/Editor/Data/Managed/UnityEditor.dll</HintPath>
     </Reference>
     <Reference Include="MathNet.Numerics">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Assets/netstandard2.0/MathNet.Numerics.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Assets/netstandard2.0/MathNet.Numerics.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.4.1f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>
@@ -630,31 +633,31 @@
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.4.1f1/Editor/Data/NetStandard/compat/2.0.0/shims/netfx/System.Xml.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Timeline.Editor">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VSCode.Editor">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.VSCode.Editor.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.VSCode.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Timeline">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.Timeline.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.Timeline.dll</HintPath>
     </Reference>
     <Reference Include="Unity.CollabProxy.Editor">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Rider.Editor">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.Rider.Editor.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.Rider.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor.UI">
-      <HintPath>C:/Users/Alistair/Documents/procedural road builder/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
+      <HintPath>C:/Users/Alistair/Documents/procedural race track git/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup></ItemGroup>
