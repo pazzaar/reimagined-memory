@@ -265,8 +265,8 @@ public class CurveImplementation : MonoBehaviour
   
     public void GenerateMesh ()
     {
-		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth);
-		Mesh mesh = MeshMaker.RoadMeshFromPoints(roadInfo.roadVerticies, "road");
+		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
+		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, "road");
 		GetComponent<MeshFilter>().sharedMesh = mesh;
 
         if (drawEdges)
@@ -276,10 +276,11 @@ public class CurveImplementation : MonoBehaviour
         }
     }
 
-    private void DrawInner(List<Pair<Vector3>> innerVerticies)
+    private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies)
     {
-		Mesh mesh = MeshMaker.RoadMeshFromPoints(innerVerticies, "inner");
+		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(innerVerticies, "inner");
 
+		DestroyImmediate(GameObject.Find("Inner Edge"));
 		GameObject piece = new GameObject("Inner Edge");
         piece.transform.SetParent(transform);
         piece.transform.position = transform.position;
@@ -290,10 +291,11 @@ public class CurveImplementation : MonoBehaviour
         rend.sharedMaterial.color = Color.white;
     }
 
-    private void DrawOuter(List<Pair<Vector3>> outerVerticies)
+    private void DrawOuter(List<List<ExtrudeShapePoint>> outerVerticies)
     {
-		Mesh mesh = MeshMaker.RoadMeshFromPoints(outerVerticies, "outer");
+		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(outerVerticies, "outer");
 
+		DestroyImmediate(GameObject.Find("Outer Edge"));
 		GameObject piece = new GameObject("Outer Edge");
         piece.transform.SetParent(transform);
         piece.transform.position = transform.position;
@@ -356,7 +358,7 @@ public class CurveImplementation : MonoBehaviour
 	}
 
 	//Return pairs of points to contruct the mesh for the road
-	public static RoadPointInfo GenerateTangentPointsFromPath(List<Vector3> path, float width, float edgeWidth)
+	public static RoadPointInfo GenerateTangentPointsFromPath(List<Vector3> path, float width, float edgeWidth, float thickness)
 	{
 		RoadPointInfo roadInfo = new RoadPointInfo();
 
@@ -379,12 +381,25 @@ public class CurveImplementation : MonoBehaviour
 
 			//Stick two points on either side of the original point, in line with the orientation
 			Pair<Vector3> roadPair = new Pair<Vector3>(path[i] + t * width / 2, path[i] - t * width / 2);
-			Pair<Vector3> innerPair = new Pair<Vector3>(path[i] - t * width / 2, path[i] - t * (width / 2 + edgeWidth));
-			Pair<Vector3> outerPair = new Pair<Vector3>(path[i] + t * (width / 2 + edgeWidth), path[i] + t * width / 2);
+
+			List<ExtrudeShapePoint> outer = new List<ExtrudeShapePoint>();
+			outer.Add(new ExtrudeShapePoint(path[i] - t * width / 2));
+			outer.Add(new ExtrudeShapePoint((path[i] - t * width / 2) + new Vector3(0, thickness, 0)));
+			outer.Add(new ExtrudeShapePoint((path[i] - t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
+			outer.Add(new ExtrudeShapePoint((path[i] - t * (width / 2 + edgeWidth))));
+
+			List<ExtrudeShapePoint> inner = new List<ExtrudeShapePoint>();
+			inner.Add(new ExtrudeShapePoint((path[i] + t * (width / 2 + edgeWidth))));
+			inner.Add(new ExtrudeShapePoint((path[i] + t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
+			inner.Add(new ExtrudeShapePoint((path[i] + t * width / 2) + new Vector3(0, thickness, 0)));
+			inner.Add(new ExtrudeShapePoint(path[i] + t * width / 2));
+			
+			
+			
 
 			roadInfo.roadVerticies.Add(roadPair);
-			roadInfo.innerVerticies.Add(innerPair);
-			roadInfo.outerVerticies.Add(outerPair);
+			roadInfo.innerVerticies.Add(inner);
+			roadInfo.outerVerticies.Add(outer);
 		}
 
 		return roadInfo;

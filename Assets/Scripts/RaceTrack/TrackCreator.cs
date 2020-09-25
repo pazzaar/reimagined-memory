@@ -10,7 +10,7 @@ public class TrackCreator : MonoBehaviour
 	public float trackWidth = 200;
 	public float trackHeight = 160;
 	public int trackPoints = 20;
-	public List<Vector2> curve = new List<Vector2>();
+	private List<Vector2> curve = new List<Vector2>();
 	public List<Vector3> points = new List<Vector3>();
 
 	static int GetMaxSegmentIndex(IEnumerable<Vector2> Curve)
