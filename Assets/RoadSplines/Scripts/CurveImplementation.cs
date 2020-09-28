@@ -56,7 +56,7 @@ public class CurveImplementation : MonoBehaviour
 			trackMaker = gameObject.GetComponent(typeof(TrackCreator)) as TrackCreator;
 
 		ControlPoints = trackMaker.points;
-		DrawSpline(false);
+		//DrawSpline(false);
     }
 
     public void DrawSpline (bool store)
@@ -262,18 +262,20 @@ public class CurveImplementation : MonoBehaviour
         }
     }
 
-  
     public void GenerateMesh ()
     {
 		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
 		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, "road");
 		GetComponent<MeshFilter>().sharedMesh = mesh;
+		GetComponent<MeshCollider>().sharedMesh = mesh;
 
         if (drawEdges)
         {
             DrawInner(roadInfo.innerVerticies);
             DrawOuter(roadInfo.outerVerticies);
         }
+
+
     }
 
     private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies)
@@ -382,21 +384,20 @@ public class CurveImplementation : MonoBehaviour
 			//Stick two points on either side of the original point, in line with the orientation
 			Pair<Vector3> roadPair = new Pair<Vector3>(path[i] + t * width / 2, path[i] - t * width / 2);
 
+			//right sidewalk shape
 			List<ExtrudeShapePoint> outer = new List<ExtrudeShapePoint>();
 			outer.Add(new ExtrudeShapePoint(path[i] - t * width / 2));
 			outer.Add(new ExtrudeShapePoint((path[i] - t * width / 2) + new Vector3(0, thickness, 0)));
 			outer.Add(new ExtrudeShapePoint((path[i] - t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
 			outer.Add(new ExtrudeShapePoint((path[i] - t * (width / 2 + edgeWidth))));
 
+			//left sidewalk shape
 			List<ExtrudeShapePoint> inner = new List<ExtrudeShapePoint>();
 			inner.Add(new ExtrudeShapePoint((path[i] + t * (width / 2 + edgeWidth))));
 			inner.Add(new ExtrudeShapePoint((path[i] + t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
 			inner.Add(new ExtrudeShapePoint((path[i] + t * width / 2) + new Vector3(0, thickness, 0)));
 			inner.Add(new ExtrudeShapePoint(path[i] + t * width / 2));
 			
-			
-			
-
 			roadInfo.roadVerticies.Add(roadPair);
 			roadInfo.innerVerticies.Add(inner);
 			roadInfo.outerVerticies.Add(outer);

@@ -92,6 +92,13 @@
     <Compile Include="Assets\RoadSplines\Scripts\RoadPointInfo.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\SplineEditor.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Utils.cs" />
+    <Compile Include="Assets\Scripts\CameraController.cs" />
+    <Compile Include="Assets\Scripts\ModularCar\CarControllerV3.cs" />
+    <Compile Include="Assets\Scripts\ModularCar\ForcePower.cs" />
+    <Compile Include="Assets\Scripts\ModularCar\ForceSteering.cs" />
+    <Compile Include="Assets\Scripts\ModularCar\Friction.cs" />
+    <Compile Include="Assets\Scripts\ModularCar\InputController.cs" />
+    <Compile Include="Assets\Scripts\ModularCar\Suspension.cs" />
     <Compile Include="Assets\Scripts\RaceTrack\TrackCreator.cs" />
     <Compile Include="Assets\Scripts\RaceTrack\TrackEditor.cs" />
     <Compile Include="Assets\Scripts\RaceTrack\TrackPoint.cs" />
@@ -100,6 +107,11 @@
     <Compile Include="Assets\Scripts\Unfinished path creator\Path.cs" />
     <Compile Include="Assets\Scripts\Unfinished path creator\PathCreator.cs" />
     <Compile Include="Assets\Scripts\Unfinished path creator\PathEditor.cs" />
+    <Compile Include="Assets\Scripts\old\CarController.cs" />
+    <Compile Include="Assets\Scripts\old\CarControllerV2.cs" />
+    <Compile Include="Assets\Scripts\old\CarWheel.cs" />
+    <Compile Include="Assets\Scripts\old\old.cs" />
+    <None Include="Assets\Models\BrokenVector\LowPolyShaders\Shaders\LowPolyPBRShader.shader" />
     <None Include="Assets\netstandard2.0\MathNet.Numerics.xml" />
     <Reference Include="UnityEngine">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.4.1f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
