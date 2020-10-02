@@ -43,10 +43,12 @@ public class MeshMaker : MonoBehaviour
 	{
 	}
 
-	public static Mesh RoadMeshAlongPath(List<Pair<Vector3>> points, string meshName)
+	public static Mesh RoadMeshAlongPath(List<Pair<Vector3>> points, string meshName, bool closedLoop)
 	{
 		Mesh mesh = new Mesh();
 		mesh.name = meshName;
+
+		int closedAdjustment = closedLoop ? 0 : 1;
 
 		List<int> triangles = new List<int>();
 		List<Vector3> verts = new List<Vector3>();
@@ -61,26 +63,15 @@ public class MeshMaker : MonoBehaviour
 			//First vertex + uvs and norms
 			verts.Add(points[i].First);
 			norms.Add(Vector3.up);
-			if (uvIndex == 0)
-			{
-				uvs.Add(new Vector2(0.0f, 0.0f));
-			}
-			else
-			{
-				uvs.Add(new Vector2(1.0f, 0.0f));
-			}
 
 			//Second vertex + uvs and norms
 			verts.Add(points[i].Second);
 			norms.Add(Vector3.up);
-			if (uvIndex == 0)
-			{
-				uvs.Add(new Vector2(0.0f, 1.0f));
-			}
-			else
-			{
-				uvs.Add(new Vector2(1.0f, 1.0f));
-			}
+
+			//Uvs
+			float uvProgression = i / (float)(points.Count() - 1 - closedAdjustment);
+			uvs.Add(new Vector2(0.0f, uvProgression));
+			uvs.Add(new Vector2(1.0f, uvProgression));
 
 			//Make triangles
 			if (i < points.Count() - 1)
@@ -96,7 +87,7 @@ public class MeshMaker : MonoBehaviour
 				triangles.Add(vertsIndex + 3);
 			}
 			//Do the last point to loop it
-			else 
+			else if (closedLoop)
 			{
 				//First Triangle
 				triangles.Add(vertsIndex);

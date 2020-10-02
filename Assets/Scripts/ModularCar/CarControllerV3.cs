@@ -93,7 +93,7 @@ namespace ModularCar
 		
 		private void Downforce()
 		{
-			rb.AddForce(-transform.up * downforce * currentSpeed * wheelPower);
+			rb.AddForce(-transform.up * downforce * currentSpeed);
 		}
 
 		private void Grip()
