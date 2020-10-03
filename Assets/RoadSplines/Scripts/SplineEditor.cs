@@ -12,8 +12,9 @@ public class SplineEditor : Editor
         
         if (GUILayout.Button ("Instantiate"))
         {
-            curve.DrawSpline(true);
-            curve.GenerateMesh();
-        }
+            var points = curve.MakeSpline(curve.trackMaker.points, true);
+            curve.GenerateRoadMesh(points, true);
+			curve.GenerateMesh(points);
+		}
     }
 }

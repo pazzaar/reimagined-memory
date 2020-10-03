@@ -8,16 +8,14 @@ using Utils;
 [ExecuteInEditMode()]
 public class CurveImplementation : MonoBehaviour
 {
-	private List<Vector3> points = new List<Vector3>(); //All points of the spline
-	private List<Vector3> evenPoints = new List<Vector3>(); //All points of the spline
-	private List<Pair<Vector3>> exitTest = new List<Pair<Vector3>>(); //All points of the spline
 
-	private TrackCreator trackMaker;
+	List<Pair<Vector3>> exitControlPoints;
+	public TrackCreator trackMaker;
 
 	public bool drawEdges = true;
+	[Tooltip("The alpha is a catmull-rom spline specific thing, will make the curve's tangents more or less agressive")]
 	public float alpha = .5f;
 
-    public List<Vector3> ControlPoints;
     public int CurveResolution = 10;
     public float extrude = 10;
 
@@ -27,8 +25,6 @@ public class CurveImplementation : MonoBehaviour
 	public float tangentAggression = .5f; //Higher is wider turns, lower is tighter turns
 
     public bool debug = true;
-
-    public bool ClosedLoop = true;
 
     [HideInInspector]
     public List<Vector3> waypoints = new List<Vector3>();
@@ -47,45 +43,44 @@ public class CurveImplementation : MonoBehaviour
 		if (trackMaker == null)
 			trackMaker = gameObject.GetComponent(typeof(TrackCreator)) as TrackCreator;
 
-		ControlPoints = trackMaker.points;
+		//ControlPoints = trackMaker.points;
 		//DrawSpline(false);
     }
 
-	public void DrawSpline(bool store)
+	public List<Vector3> MakeSpline(List<Vector3> controlPoints, bool closedLoop)
 	{
-		if (store)
-			points.Clear();
+		List<Vector3> points = new List<Vector3>(); //All points of the spline
 		
-		int closedAdjustment = ClosedLoop ? 0 : 1;
+		int closedAdjustment = closedLoop ? 0 : 1;
 
 		// First for loop goes through each individual control point and connects it to the next, so 0-1, 1-2, 2-3 and so on
-		for (int i = 0; i < ControlPoints.Count - closedAdjustment; i++)
+		for (int i = 0; i < controlPoints.Count - closedAdjustment; i++)
 		{
 			//The 4 points on my catmull spline
 			Vector3 point1, point2, point3, point4;
 
 			//The two points to interpolate between
-			point2 = ControlPoints[i];
-			point3 = (ClosedLoop == true && i == ControlPoints.Count - 1) ? ControlPoints[0] : ControlPoints[i + 1];
+			point2 = controlPoints[i];
+			point3 = (closedLoop == true && i == controlPoints.Count - 1) ? controlPoints[0] : controlPoints[i + 1];
 
 			//The first handle/anchor thingy
-			if (i == 0 && !ClosedLoop)
+			if (i == 0 && !closedLoop)
 				//If its the first point, make the point up
 				point1 = point3 - point2;
 			else
 				//This will loop back round
-				point1 = ControlPoints[((i - 1) + ControlPoints.Count) % ControlPoints.Count];
+				point1 = controlPoints[((i - 1) + controlPoints.Count) % controlPoints.Count];
 
 			//The second handle/anchor thingy
-			if (i >= ControlPoints.Count - 2 && !ClosedLoop)
+			if (i >= controlPoints.Count - 2 && !closedLoop)
 				//If we're on the last point, make it up
 				point4 = point3 - point2;
 			else
-				point4 = ControlPoints[(i + 2) % ControlPoints.Count];
+				point4 = controlPoints[(i + 2) % controlPoints.Count];
 
 			float pointStep = 1.0f / CurveResolution;
 
-			if (i == ControlPoints.Count - 1 && ClosedLoop)
+			if (i == controlPoints.Count - 1 && closedLoop)
 				pointStep = 1.0f / (CurveResolution - 1);
 
 			// Second loop actually creates the spline for this particular segment
@@ -93,16 +88,14 @@ public class CurveImplementation : MonoBehaviour
 			{
 				float t = j * pointStep;
 				Vector3 position = CatmullRom.GetCatmullRomPosition(point1, point2, point3, point4, t, out var tangent, alpha);
-
-				if (store)
-					points.Add(position);
+				points.Add(position);
 			}
 		}
 
-		if (store)
-			evenPoints = SplitCurveEvenly(points);
+		return SplitCurveEvenly(points);
 	}
 
+	/*
 	void OnDrawGizmos()
     {
         if (debug && ControlPoints.Count > 1)
@@ -140,11 +133,12 @@ public class CurveImplementation : MonoBehaviour
 			}
         }
     }
+	*/
 
-    public void GenerateMesh ()
+    public void GenerateRoadMesh(List<Vector3> evenPoints, bool closedLoop)
     {
 		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
-		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, "road", ClosedLoop);
+		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, "road", closedLoop);
 		GetComponent<MeshFilter>().sharedMesh = mesh;
 		GetComponent<MeshCollider>().sharedMesh = mesh;
 
@@ -155,7 +149,23 @@ public class CurveImplementation : MonoBehaviour
         }
     }
 
-    private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies)
+	public void GenerateMesh(List<Vector3> evenPoints)
+	{
+		var info = MakeExitTest(evenPoints, extrude);
+		Mesh mesh = MeshMaker.RoadMeshAlongPath(info, "exit", false);
+
+		DestroyImmediate(GameObject.Find("exit"));
+		GameObject exit = new GameObject("exit");
+		exit.transform.SetParent(transform);
+		exit.transform.position = transform.position;
+		exit.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+		MeshRenderer rend = exit.AddComponent<MeshRenderer>();
+		rend.sharedMaterial = new Material(Shader.Find("Standard"));
+		rend.sharedMaterial.color = Color.white;
+	}
+
+	private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies)
     {
 		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(innerVerticies, "inner");
 
@@ -278,21 +288,94 @@ public class CurveImplementation : MonoBehaviour
 			roadInfo.roadVerticies.Add(roadPair);
 			roadInfo.innerVerticies.Add(inner);
 			roadInfo.outerVerticies.Add(outer);
-
-
-			if (i == 0 || i == 10)
-			{
-				var exit = new Pair<Vector3>(path[i] - t * width / 4, path[i] - t * width / 2);
-				exitTest.Add(exit);
-			}
-			if (i == 20 || i == 30)
-			{
-				var exit = new Pair<Vector3>(path[i] - t * width / 2, path[i] - t * ((3 * width) / 4));
-				exitTest.Add(exit);
-			}
-
 		}
 
 		return roadInfo;
+	}
+
+	public List<Pair<Vector3>> MakeExitTest(List<Vector3> path, float width)
+	{
+		List<Pair<Vector3>> exitTest = new List<Pair<Vector3>>();
+		exitControlPoints = new List<Pair<Vector3>>();
+
+		float exitLength = 20;
+		Vector3 tangent = new Vector3();
+
+		for (int i = 0; i < 40; i++)
+		{
+			Vector3 forward = Vector3.zero;
+			if (i < path.Count - 1)
+			{
+				forward += path[i + 1] - path[i];
+			}
+
+			if (i > 0)
+			{
+				forward += path[i] - path[i - 1];
+			}
+			forward.Normalize();
+
+			//Get the orientation of the point (where it point towards the next point in the path)
+			Vector3 t = Vector3.Cross(forward, Vector3.up).normalized;
+
+			var innerOrigin = 0;
+			var outerOrigin = width / 2;
+
+			var innerTarget = width / 2;
+			var outerTarget = width;
+
+			var innerSmooth = Mathf.SmoothStep(innerOrigin, innerTarget, i / exitLength);
+			var outerSmooth = Mathf.SmoothStep(outerOrigin, outerTarget, i / exitLength);
+
+			if (i < exitLength)
+			{
+				Pair<Vector3> pair = new Pair<Vector3>(path[i] - t * innerSmooth, path[i] - t * outerSmooth);
+				exitTest.Add(pair);
+			}
+			else if (i < 40)
+			{
+				Pair<Vector3> pair = new Pair<Vector3>(path[i] - t * innerTarget, path[i] - t * outerTarget);
+				exitTest.Add(pair);
+				if (i == 39)
+				{
+					exitControlPoints.Add(pair);
+					tangent = t;
+				}
+			}
+		}
+
+		var innerRadius = 100;
+		var outerRadius = innerRadius + Vector3.Distance(exitTest.Last().First, exitTest.Last().Second);
+		var origin = exitTest.Last().Second - tangent * innerRadius;
+
+		var x = (innerRadius * Mathf.Cos(0)) + origin.x;
+		var z = (innerRadius * Mathf.Sin(0)) + origin.z;
+		var originAngle = new Vector3(x, 0, z) - origin;
+		var targetAngle = exitTest.Last().First - origin;
+
+		var startingAngle = Vector3.Angle(originAngle, targetAngle);
+
+		for (int i = 5; i < 96; i = i + 5)
+		{
+			var innerX = (innerRadius * Mathf.Cos((360 - startingAngle - i) * Mathf.PI / 180)) + origin.x;
+			var innerZ = (innerRadius * Mathf.Sin((360 - startingAngle - i) * Mathf.PI / 180)) + origin.z;
+			Vector3 innerPos = new Vector3(innerX, 0, innerZ);
+
+			var outerX = (outerRadius * Mathf.Cos((360 - startingAngle - i) * Mathf.PI / 180)) + origin.x;
+			var outerZ = (outerRadius * Mathf.Sin((360 - startingAngle - i) * Mathf.PI / 180)) + origin.z;
+			Vector3 outerPos = new Vector3(outerX, 0, outerZ);
+
+			exitTest.Add(new Pair<Vector3>(outerPos, innerPos));
+		}
+
+		for (int i = 0; i < exitTest.Count; i++)
+		{
+			exitTest[i] = new Pair<Vector3>(
+				new Vector3(exitTest[i].First.x, exitTest[i].First.y - .1f, exitTest[i].First.z), 
+				new Vector3(exitTest[i].Second.x, exitTest[i].Second.y - .1f, exitTest[i].Second.z)
+				);
+		}
+
+		return exitTest;
 	}
 }
