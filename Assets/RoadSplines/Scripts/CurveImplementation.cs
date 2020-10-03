@@ -8,7 +8,7 @@ using Utils;
 [ExecuteInEditMode()]
 public class CurveImplementation : MonoBehaviour
 {
-
+	List<Vector3> ControlPoints;
 	List<Pair<Vector3>> exitControlPoints;
 	public TrackCreator trackMaker;
 
@@ -16,7 +16,7 @@ public class CurveImplementation : MonoBehaviour
 	[Tooltip("The alpha is a catmull-rom spline specific thing, will make the curve's tangents more or less agressive")]
 	public float alpha = .5f;
 
-    public int CurveResolution = 10;
+	public int CurveResolution = 10;
     public float extrude = 10;
 
     public float edgeWidth = 2;
@@ -45,10 +45,12 @@ public class CurveImplementation : MonoBehaviour
 
 		//ControlPoints = trackMaker.points;
 		//DrawSpline(false);
-    }
+	}
 
 	public List<Vector3> MakeSpline(List<Vector3> controlPoints, bool closedLoop)
 	{
+		ControlPoints = controlPoints;
+
 		List<Vector3> points = new List<Vector3>(); //All points of the spline
 		
 		int closedAdjustment = closedLoop ? 0 : 1;
@@ -95,7 +97,6 @@ public class CurveImplementation : MonoBehaviour
 		return SplitCurveEvenly(points);
 	}
 
-	/*
 	void OnDrawGizmos()
     {
         if (debug && ControlPoints.Count > 1)
@@ -127,13 +128,14 @@ public class CurveImplementation : MonoBehaviour
             }
 
 			Gizmos.color = Color.red;
+			/*
 			foreach (var p in evenPoints)
 			{
 				//Gizmos.DrawSphere(p, .5f);
 			}
+			*/
         }
     }
-	*/
 
     public void GenerateRoadMesh(List<Vector3> evenPoints, bool closedLoop)
     {
@@ -344,30 +346,21 @@ public class CurveImplementation : MonoBehaviour
 			}
 		}
 
-		var innerRadius = 100;
-		var outerRadius = innerRadius + Vector3.Distance(exitTest.Last().First, exitTest.Last().Second);
-		var origin = exitTest.Last().Second - tangent * innerRadius;
+		var firstPoint = exitTest.Last().First;
+		var secondPoint = exitTest.Last().Second;
 
-		var x = (innerRadius * Mathf.Cos(0)) + origin.x;
-		var z = (innerRadius * Mathf.Sin(0)) + origin.z;
-		var originAngle = new Vector3(x, 0, z) - origin;
-		var targetAngle = exitTest.Last().First - origin;
+		var radius = 200;
+		var origin = firstPoint - tangent * radius;
 
-		var startingAngle = Vector3.Angle(originAngle, targetAngle);
-
-		for (int i = 5; i < 96; i = i + 5)
+		for (int i = 0; i < 90; i = i + 5)
 		{
-			var innerX = (innerRadius * Mathf.Cos((360 - startingAngle - i) * Mathf.PI / 180)) + origin.x;
-			var innerZ = (innerRadius * Mathf.Sin((360 - startingAngle - i) * Mathf.PI / 180)) + origin.z;
-			Vector3 innerPos = new Vector3(innerX, 0, innerZ);
-
-			var outerX = (outerRadius * Mathf.Cos((360 - startingAngle - i) * Mathf.PI / 180)) + origin.x;
-			var outerZ = (outerRadius * Mathf.Sin((360 - startingAngle - i) * Mathf.PI / 180)) + origin.z;
-			Vector3 outerPos = new Vector3(outerX, 0, outerZ);
-
-			exitTest.Add(new Pair<Vector3>(outerPos, innerPos));
+			var angleToRotate = Quaternion.Euler(0, i, 0);
+			var rotatedFirstPoint = RotatePointAroundPivot(firstPoint, origin, angleToRotate);
+			var rotatedSecondPoint = RotatePointAroundPivot(secondPoint, origin, angleToRotate);
+			exitTest.Add(new Pair<Vector3>(rotatedFirstPoint, rotatedSecondPoint));
 		}
 
+		//Move all points down .1f so it doesn't clip with the highway
 		for (int i = 0; i < exitTest.Count; i++)
 		{
 			exitTest[i] = new Pair<Vector3>(
@@ -377,5 +370,10 @@ public class CurveImplementation : MonoBehaviour
 		}
 
 		return exitTest;
+	}
+
+	public static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion rotation)
+	{
+		return rotation * (point - pivot) + pivot;
 	}
 }
