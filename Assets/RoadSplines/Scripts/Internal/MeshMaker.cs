@@ -1,48 +1,10 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using MIConvexHull;
 using Utils;
 
 public class MeshMaker : MonoBehaviour
-{
-    /// <summary>
-    /// Generates a rock from a given set of points. 
-    /// </summary>       
-    public static Mesh MeshFromPoints(IEnumerable<Vector3> points)
-    {
-        Mesh m = new Mesh();
-        m.name = "Mesh";
-
-        List<int> triangles = new List<int>();
-
-        var vertices = points.Select(x => new Vertex(x)).ToList();
-
-        var result = ConvexHull.Create(vertices);
-
-        m.vertices = result.Points.Select(x => x.ToVec()).ToArray();
-
-        var resultPoints = result.Points.ToList();
-
-        foreach (var face in result.Faces)
-        {
-            triangles.Add(resultPoints.IndexOf(face.Vertices[0]));
-            triangles.Add(resultPoints.IndexOf(face.Vertices[1]));
-            triangles.Add(resultPoints.IndexOf(face.Vertices[2]));
-        }
-
-        m.triangles = triangles.ToArray();
-        m.RecalculateNormals();
-
-        //m = LowPolyConverter.Convert(m); //Converts the generated mesh to low poly
-
-        return m;
-    }
-
-	public static void SidewalkMeshFromPoints(List<Vector3> path, float roadWidth, string meshName)
-	{
-	}
-
+{  
 	public static Mesh RoadMeshAlongPath(List<Pair<Vector3>> points, string meshName, bool closedLoop)
 	{
 		Mesh mesh = new Mesh();
@@ -125,7 +87,6 @@ public class MeshMaker : MonoBehaviour
 		for (int i = 0; i < points.Count(); i++)
 		{
 			int uvIndex = i % 2;
-
 			int pointsInExtrudeShape = 0;
 			foreach (var p in points.First())
 			{
@@ -232,7 +193,7 @@ public class MeshMaker : MonoBehaviour
 					}
 					//The extrude shape makes a closed shape (like a cylinder instead of a flat road or something)
 					//So connect it up to the first point in the extrude shape
-					else if (loopExtrudeShape == true)
+					else if (loopExtrudeShape)
 					{
 						//First triangle
 						triangles.Add(vertsIndex);
@@ -246,7 +207,7 @@ public class MeshMaker : MonoBehaviour
 					}
 				}
 				//Do the last point to loop it
-				else
+				else if (loopPath)
 				{
 					if (j < points[i].Count - 1)
 					{
@@ -261,7 +222,7 @@ public class MeshMaker : MonoBehaviour
 						triangles.Add(lastPointVertsIndex); //makes it clearer
 						triangles.Add(lastPointVertsIndex + 1); //makes it clearer
 					}
-					else if (loopExtrudeShape == true)
+					else if (loopExtrudeShape)
 					{
 						var lastPointVertsIndex = vertsIndex - ((points.Count - 1) * pointsInExtrudeShape);
 						//First triangle

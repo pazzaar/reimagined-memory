@@ -47,10 +47,27 @@ public class TrackEditor : Editor
 		DrawDefaultInspector();
 		TrackCreator track = (TrackCreator)target;
 
-		if (GUILayout.Button("Generate Points"))
+		if (GUILayout.Button("Generate highway points"))
+		{
+			System.Random rnd = new System.Random();
+			track.GenerateHighway(rnd);
+		}
+
+		if (GUILayout.Button("Generate road points"))
 		{
 			System.Random rnd = new System.Random();
 			track.GenerateTrack(rnd);
+		}
+
+		if (GUILayout.Button("Generate road points akima"))
+		{
+			System.Random rnd = new System.Random();
+			track.GenerateTrackAkima(rnd);
+		}
+
+		if (GUILayout.Button("Generate road sections"))
+		{
+			track.GenerateRoadSection();
 		}
 	}
 }

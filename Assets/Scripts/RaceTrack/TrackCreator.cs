@@ -10,8 +10,16 @@ public class TrackCreator : MonoBehaviour
 	public float trackWidth = 200;
 	public float trackHeight = 160;
 	public int trackPoints = 20;
-	private List<Vector2> curve = new List<Vector2>();
+	public List<Vector3> curve = new List<Vector3>();
 	public List<Vector3> points = new List<Vector3>();
+
+	public List<Vector3> bottom = new List<Vector3>();
+	public List<Vector3> right = new List<Vector3>();
+	public List<Vector3> top = new List<Vector3>();
+	public List<Vector3> left = new List<Vector3>();
+
+	public int highwayIntersections = 1;
+	public float highwayMaxDeviation = 50;
 
 	static int GetMaxSegmentIndex(IEnumerable<Vector2> Curve)
 	{
@@ -37,7 +45,70 @@ public class TrackCreator : MonoBehaviour
 		return segmentIndex;
 	}
 
+	public void GenerateHighway(System.Random rnd = null)
+	{
+		if (rnd == null)
+			rnd = new System.Random();
+
+		this.rnd = rnd;
+
+		var points = GenerateRandomHighway(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation); //Get some points
+
+		var pointsConverted = new List<Vector3>();
+		//Convert to Vector3 and make sure its in center of the scene
+		pointsConverted = points.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+
+		this.points = pointsConverted;
+	}
+
+	public void GenerateRoadSection()
+	{
+		var bottom = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Bottom); //Get some points
+		var right = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Right); //Get some points
+		var top = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Top); //Get some points
+		var left = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Left); //Get some points
+
+		this.bottom = bottom.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+		this.right = right.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+		this.top = top.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+		this.left = left.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+	}
+
 	public void GenerateTrack(System.Random rnd = null)
+	{
+		if (rnd == null)
+			rnd = new System.Random();
+		this.rnd = rnd;
+
+		var points = GenerateRandomTrack(trackWidth, trackHeight, trackPoints); //Get some points
+		
+
+		int startIndex = GetMaxSegmentIndex(points);
+		startIndex = (int)((startIndex) * 2000 / (trackPoints + 1)); // ??????????????????
+		var curve = AkimaSpline(points, 2000).ToList(); //Curvify the ordered list, 2000 is the resolution of the curve.
+
+		var curveConverted = new List<Vector3>();
+		//Convert to Vector3 and make sure its in center of the scene
+		curveConverted = curve.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+
+		this.curve = curveConverted;
+
+		//Remove any weird kinks which can get into the track
+		//TODO
+
+		//Remove the last point, its duplicated for the curve above
+		points = points.Take(points.Count() - 1);
+		if (IsClockwise(points.ToList()))
+			points = points.Reverse();
+
+		var pointsConverted = new List<Vector3>();
+		//Convert to Vector3 and make sure its in center of the scene
+		pointsConverted = points.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
+
+		this.points = pointsConverted;
+	}
+
+	public void GenerateTrackAkima(System.Random rnd = null)
 	{
 		if (rnd == null)
 			rnd = new System.Random();
@@ -47,29 +118,9 @@ public class TrackCreator : MonoBehaviour
 
 		int startIndex = GetMaxSegmentIndex(points);
 		startIndex = (int)((startIndex) * 2000 / (trackPoints + 1)); // ??????????????????
-		var curve = Spline(points, 2000).ToList(); //Curvify the ordered list, 2000 is the resolution of the curve.
-
-		var p1 = curve[startIndex];
-		var p2 = p1 - curve[startIndex + 1];
-
-		startPosition = p1;
-		startOrientation = -Math.Atan2(p2.x, p2.y) * 180 / Math.PI;
-		this.length = MeasureLength(curve);
-		this.curve = curve;
-
-		var pointsConverted = new List<Vector3>();
-
-		foreach (var p in points)
-		{
-			pointsConverted.Add(new Vector3(p.x, 0, p.y));
-		}
-
-		this.points = pointsConverted;
+		var curve = AkimaSpline(points, 2000).ToList(); //Curvify the ordered list, 2000 is the resolution of the curve.
+		this.curve = curve.Select(c => new Vector3(c.x, 0, c.y)).ToList();
 	}
-
-	private double startOrientation = 0;
-
-	private Vector2 startPosition = new Vector2();
 
 	private IEnumerable<Vector2> GenerateRandomTrack(float width, float height, int points)
 	{
@@ -114,7 +165,125 @@ public class TrackCreator : MonoBehaviour
 			}
 		}
 
-		return best.Take(best.Count() - 1);
+		return best;
+	}
+
+	private IEnumerable<Vector2> GenerateRandomHighway(float width, float height, int intersections, float maxDeviation)
+	{
+		var start = UnityEngine.Random.Range(0f, 1f);
+		var end = UnityEngine.Random.Range(0f, 1f);
+
+		List<Vector2> points = new List<Vector2>();
+
+		Vector2 highwayStart;
+		Vector2 highwayEnd;
+
+		//Coinflip if it is going across or down the map
+		if (UnityEngine.Random.Range(0f, 1f) > .5f)
+		{
+			highwayStart = new Vector2(start * width, 0);
+			highwayEnd = new Vector2(end * width, height);
+		}
+		else
+		{
+			highwayStart = new Vector2(0, start * height);
+			highwayEnd = new Vector2(width, end * height);
+		}
+
+		//Split evenly with no. of intersections
+		//Add 2 to account for the start and end postion
+		for (int i = 0; i <= intersections + 1; i++)
+		{
+			points.Add(Vector2.Lerp(highwayStart, highwayEnd, i / (float)(intersections + 1)));
+		}
+
+		//Work out the normal to the two points
+		var normal = Vector2.Perpendicular(highwayEnd - highwayStart).normalized;
+
+		//Move each point a certain amount along the normal by the maxDeviation * some random amount (except the first and last point)
+		//Start at i = 1 and end at count - 1 so the first and last point stay the same
+		for (int i = 1; i < points.Count - 1; i++)
+		{
+			//Make sure it stays in the bounds of the height & width
+			do
+			{
+				var seed = UnityEngine.Random.Range(-1f, 1f);
+				points[i] = points[i] + (normal * (maxDeviation * seed));
+			}
+			while (points[i].x > width || points[i].y > height || points[i].x < 0 || points[i].y < 0);
+		}
+
+		return points;
+	}
+
+	public enum Side {
+		Bottom,
+		Right,
+		Top,
+		Left
+	}
+
+	private IEnumerable<Vector2> GenerateRandomRoadSection(float width, float height, int intersections, float maxDeviation, Side side)
+	{
+		List<Vector2> points = new List<Vector2>();
+
+		var startSeed = UnityEngine.Random.Range(0f, 1f);
+		var endSeed = UnityEngine.Random.Range(0f, 1f);
+		Vector2 roadStart = new Vector2();
+		Vector2 roadEnd = new Vector2();
+
+		switch (side)
+		{
+			case Side.Bottom:
+				{
+					roadStart = new Vector2(0, startSeed * .3f * height);
+					roadEnd = new Vector2(width, endSeed * .3f * height);
+				}
+				break;
+			case Side.Right:
+				{
+					roadStart = new Vector2(width - (startSeed * .3f * width), 0);
+					roadEnd = new Vector2(width - (endSeed * .3f * width), height);
+				}
+				break;
+			case Side.Top:
+				{
+					roadStart = new Vector2(0, height - (startSeed * .3f * height));
+					roadEnd = new Vector2(width, height - (endSeed * .3f * height));
+				}
+				break;
+			case Side.Left:
+				{
+					roadStart = new Vector2(startSeed * .3f * width, 0);
+					roadEnd = new Vector2(endSeed * .3f * width, height);
+				}
+				break;
+		}
+
+		//Split evenly with no. of intersections
+		//Add 2 to account for the start and end postion
+		for (int i = 0; i <= intersections + 1; i++)
+		{
+			points.Add(Vector2.Lerp(roadStart, roadEnd, i / (float)(intersections + 1)));
+		}
+
+		//Work out the normal to the two points
+		var normal = Vector2.Perpendicular(roadStart - roadEnd).normalized;
+
+		//Move each point a certain amount along the normal by the maxDeviation * some random amount (except the first and last point)
+		//Start at i = 1 and end at count - 1 so the first and last point stay the same
+		for (int i = 1; i < points.Count - 1; i++)
+		{
+			//Make sure it stays in the bounds of the height & width
+			do
+			{
+				var seed = UnityEngine.Random.Range(-1f, 1f);
+				points[i] = points[i] + (normal * (maxDeviation * seed));
+			}
+			while (points[i].x > width || points[i].y > height || points[i].x < 0 || points[i].y < 0);
+		}
+
+		return points;
 	}
 
 	public static void Swap<T>(ref T lhs, ref T rhs)
@@ -135,7 +304,7 @@ public class TrackCreator : MonoBehaviour
 		return np.Take(count - 1).Concat(np.Take(1));
 	}
 
-	public static IEnumerable<Vector2> Spline(IEnumerable<Vector2> points, int count)
+	public static IEnumerable<Vector2> AkimaSpline(IEnumerable<Vector2> points, int count)
 	{
 		var points1 = new List<Vector2>(points);
 		points1.Add(points1[1]);
@@ -172,6 +341,18 @@ public class TrackCreator : MonoBehaviour
 	public static double MeasureLength(IEnumerable<Vector2> Points)
 	{
 		return Points.Zip(Points.Skip(1), Distance).Sum() + Distance(Points.First(), Points.Last());
+	}
+
+	public bool IsClockwise(IList<Vector2> vertices)
+	{
+		double sum = 0.0;
+		for (int i = 0; i < vertices.Count; i++)
+		{
+			Vector2 v1 = vertices[i];
+			Vector2 v2 = vertices[(i + 1) % vertices.Count];
+			sum += (v2.x - v1.x) * (v2.y + v1.y);
+		}
+		return sum > 0.0;
 	}
 
 	public double length = 0;

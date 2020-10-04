@@ -12,9 +12,14 @@ public class CurveImplementation : MonoBehaviour
 	List<Pair<Vector3>> exitControlPoints;
 	public TrackCreator trackMaker;
 
+	List<List<Pair<Vector3>>> highways = new List<List<Pair<Vector3>>>();
+	List<List<Pair<Vector3>>> roads = new List<List<Pair<Vector3>>>();
+
 	public bool drawEdges = true;
 	[Tooltip("The alpha is a catmull-rom spline specific thing, will make the curve's tangents more or less agressive")]
 	public float alpha = .5f;
+
+	public bool closedLoop = true;
 
 	public int CurveResolution = 10;
     public float extrude = 10;
@@ -31,6 +36,9 @@ public class CurveImplementation : MonoBehaviour
 
     public bool generateWaypoints = true;
     public float waypointResolution = 5;
+
+	public List<Vector3> debugPoints;
+	public List<float> debugAngles;
 
 	void Awake()
 	{
@@ -135,19 +143,51 @@ public class CurveImplementation : MonoBehaviour
 			}
 			*/
         }
+
+		if (debugPoints != null)
+		{
+			foreach (var d in debugPoints)
+			{
+				Gizmos.color = Color.red;
+				Gizmos.DrawSphere(d, 10);
+			}
+		}
     }
 
-    public void GenerateRoadMesh(List<Vector3> evenPoints, bool closedLoop)
-    {
+	public void GenerateRoadMesh(List<Vector3> evenPoints, string name, bool closedLoop)
+	{
 		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
-		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, "road", closedLoop);
-		GetComponent<MeshFilter>().sharedMesh = mesh;
-		GetComponent<MeshCollider>().sharedMesh = mesh;
 
-        if (drawEdges)
+		if (name == "highway")
+		{
+			highways = new List<List<Pair<Vector3>>>();
+			highways.Add(roadInfo.roadVerticies);
+		}
+		else if (name == "road")
+		{
+			roads = new List<List<Pair<Vector3>>>();
+			roads.Add(roadInfo.roadVerticies);
+		}
+
+		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, name, closedLoop);
+		//GetComponent<MeshFilter>().sharedMesh = mesh;
+		//GetComponent<MeshCollider>().sharedMesh = mesh;
+
+		DestroyImmediate(GameObject.Find(name));
+		GameObject road = new GameObject(name);
+		road.transform.SetParent(transform);
+		road.transform.position = transform.position;
+		road.AddComponent<MeshFilter>().sharedMesh = mesh;
+		road.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+		MeshRenderer rend = road.AddComponent<MeshRenderer>();
+		rend.sharedMaterial = new Material(Shader.Find("Shader Graphs/road"));
+		rend.sharedMaterial.color = Color.white;
+
+		if (drawEdges)
         {
-            DrawInner(roadInfo.innerVerticies);
-            DrawOuter(roadInfo.outerVerticies);
+            DrawInner(roadInfo.innerVerticies, closedLoop);
+            DrawOuter(roadInfo.outerVerticies, closedLoop);
         }
     }
 
@@ -163,13 +203,13 @@ public class CurveImplementation : MonoBehaviour
 		exit.AddComponent<MeshFilter>().sharedMesh = mesh;
 
 		MeshRenderer rend = exit.AddComponent<MeshRenderer>();
-		rend.sharedMaterial = new Material(Shader.Find("Standard"));
+		rend.sharedMaterial = new Material(Shader.Find("Shader Graphs_road"));
 		rend.sharedMaterial.color = Color.white;
 	}
 
-	private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies)
+	private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies, bool closedLoop)
     {
-		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(innerVerticies, "inner");
+		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(innerVerticies, "inner", closedLoop, true);
 
 		DestroyImmediate(GameObject.Find("Inner Edge"));
 		GameObject piece = new GameObject("Inner Edge");
@@ -182,9 +222,9 @@ public class CurveImplementation : MonoBehaviour
         rend.sharedMaterial.color = Color.white;
     }
 
-    private void DrawOuter(List<List<ExtrudeShapePoint>> outerVerticies)
+    private void DrawOuter(List<List<ExtrudeShapePoint>> outerVerticies, bool closedLoop)
     {
-		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(outerVerticies, "outer");
+		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(outerVerticies, "outer", closedLoop, true);
 
 		DestroyImmediate(GameObject.Find("Outer Edge"));
 		GameObject piece = new GameObject("Outer Edge");
@@ -349,7 +389,7 @@ public class CurveImplementation : MonoBehaviour
 		var firstPoint = exitTest.Last().First;
 		var secondPoint = exitTest.Last().Second;
 
-		var radius = 200;
+		var radius = 100;
 		var origin = firstPoint - tangent * radius;
 
 		for (int i = 0; i < 90; i = i + 5)
@@ -375,5 +415,62 @@ public class CurveImplementation : MonoBehaviour
 	public static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion rotation)
 	{
 		return rotation * (point - pivot) + pivot;
+	}
+
+	public void DetectClosedPoints()
+	{
+		debugPoints = new List<Vector3>();
+		debugAngles = new List<float>();
+
+		var highway = highways.First();
+		var road = roads.First();
+
+		var threshholdDistance = 5;
+
+		var highwayPointIndexs = new List<int>();
+		var roadPointIndexs = new List<int>();
+
+		var exitedRecently = 0;
+
+		for (int i = 0; i < highway.Count; i++)
+		{
+			if (exitedRecently == 0)
+			{
+				for (int j = 0; j < road.Count; j++)
+				{
+					if (exitedRecently == 0)
+					{
+						var d = Vector3.Distance(road[j].First, highway[i].First);
+						if (d < threshholdDistance)
+						{
+							highwayPointIndexs.Add(i);
+							roadPointIndexs.Add(j);
+							exitedRecently = 20;
+						}
+					}
+				}
+			}
+			else
+				exitedRecently--;
+		}
+
+		
+
+		for (int i = 0; i < highwayPointIndexs.Count; i++)
+		{
+			debugPoints.Add(highway[highwayPointIndexs[i]].First);
+			var something = Vector3.SignedAngle(highway[highwayPointIndexs[i] + 1].First - highway[highwayPointIndexs[i]].First, road[roadPointIndexs[i] + 1].First - road[roadPointIndexs[i]].First, Vector3.up);
+			debugAngles.Add(something);
+			//debugPoints.Add(road[roadPointIndexs[i]].First);
+		}
+
+		//var h = highway[highwayPointIndex - 30].First;
+		//var r = road[roadPointIndex - 30].First;
+
+		//debugPoints.Add(highwayPoint.First);
+		//debugPoints.Add(r);
+		//debugPoints.Add(h);
+		//debugPoints.Add(highway[highwayPointIndex - 30].First);
+		//debugPoints.Add(road[roadPointIndex - 30].First);
 	}
 }

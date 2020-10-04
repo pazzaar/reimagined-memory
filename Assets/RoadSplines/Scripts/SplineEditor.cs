@@ -12,9 +12,43 @@ public class SplineEditor : Editor
         
         if (GUILayout.Button ("Instantiate"))
         {
-            var points = curve.MakeSpline(curve.trackMaker.points, true);
-            curve.GenerateRoadMesh(points, true);
-			curve.GenerateMesh(points);
+            var points = curve.MakeSpline(curve.trackMaker.points, curve.closedLoop);
+            curve.GenerateRoadMesh(points, "test", curve.closedLoop);
+			//curve.GenerateMesh(points);
 		}
-    }
+
+		if (GUILayout.Button("Make highway"))
+		{
+			var points = curve.MakeSpline(curve.trackMaker.points, false);
+			curve.GenerateRoadMesh(points, "highway", false);
+			//curve.GenerateMesh(points);
+		}
+
+		if (GUILayout.Button("Make road"))
+		{
+			var points = curve.MakeSpline(curve.trackMaker.points, curve.closedLoop);
+			curve.GenerateRoadMesh(points, "road", curve.closedLoop);
+			//curve.GenerateMesh(points);
+		}
+
+		if (GUILayout.Button("Make akima road"))
+		{
+			curve.GenerateRoadMesh(curve.trackMaker.curve, "akima road", curve.closedLoop);
+			//curve.GenerateMesh(points);
+		}
+
+		if (GUILayout.Button("Make road sections"))
+		{
+			curve.GenerateRoadMesh(curve.MakeSpline(curve.trackMaker.bottom, false), "bottom", false);
+			curve.GenerateRoadMesh(curve.MakeSpline(curve.trackMaker.right, false), "right", false);
+			curve.GenerateRoadMesh(curve.MakeSpline(curve.trackMaker.top, false), "top", false);
+			curve.GenerateRoadMesh(curve.MakeSpline(curve.trackMaker.left, false), "left", false);
+			//curve.GenerateMesh(points);
+		}
+
+		if (GUILayout.Button("Highlight closest points"))
+		{
+			curve.DetectClosedPoints();
+		}
+	}
 }

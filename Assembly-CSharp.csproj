@@ -63,31 +63,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Configuration.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\Algorithm\Core.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\Algorithm\Data.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\Algorithm\Initialize.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\Algorithm\Result.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\Collections.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\ConvexFace.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\DataModel.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\MathHelper.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\ConvexHull\ObjectManager.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\IVertex.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation\DelaunayTrianglationInternal.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation\DelaunayTriangulation.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation\TriangulationCell.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation\VoronoiEdge.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Triangulation\VoronoiMesh.cs" />
-    <Compile Include="Assets\RoadSplines\MIConvexHull\Vertex.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\CurveImplementation.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\CurvePoint.cs" />
-    <Compile Include="Assets\RoadSplines\Scripts\EdgeExtruder.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Internal\CatmullRom.cs" />
-    <Compile Include="Assets\RoadSplines\Scripts\Internal\CombineMeshes.cs" />
-    <Compile Include="Assets\RoadSplines\Scripts\Internal\LowPolyConverter.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Internal\MeshMaker.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\RoadPointInfo.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\SplineEditor.cs" />
