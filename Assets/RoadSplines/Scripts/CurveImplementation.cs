@@ -11,9 +11,13 @@ public class CurveImplementation : MonoBehaviour
 	List<Vector3> ControlPoints;
 	List<Pair<Vector3>> exitControlPoints;
 	public TrackCreator trackMaker;
+	public List<List<Vector3>> connections = new List<List<Vector3>>();
 
-	List<List<Pair<Vector3>>> highways = new List<List<Pair<Vector3>>>();
-	List<List<Pair<Vector3>>> roads = new List<List<Pair<Vector3>>>();
+	public List<List<Pair<Vector3>>> highways = new List<List<Pair<Vector3>>>();
+	public List<List<Pair<Vector3>>> roads = new List<List<Pair<Vector3>>>();
+
+	public RoadPointInfo firstRoad;
+	public RoadPointInfo secondRoad;
 
 	public bool drawEdges = true;
 	[Tooltip("The alpha is a catmull-rom spline specific thing, will make the curve's tangents more or less agressive")]
@@ -22,6 +26,8 @@ public class CurveImplementation : MonoBehaviour
 	public bool closedLoop = true;
 
 	public int CurveResolution = 10;
+	public float MeshResolution = 5;
+
     public float extrude = 10;
 
     public float edgeWidth = 2;
@@ -107,7 +113,7 @@ public class CurveImplementation : MonoBehaviour
 
 	void OnDrawGizmos()
     {
-        if (debug && ControlPoints.Count > 1)
+        if (debug && ControlPoints != null && ControlPoints.Count > 1)
         {
             if (generateWaypoints)
             {
@@ -158,18 +164,24 @@ public class CurveImplementation : MonoBehaviour
 	{
 		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
 
-		if (name == "highway")
+		if (name == "bottom")
 		{
-			highways = new List<List<Pair<Vector3>>>();
-			highways.Add(roadInfo.roadVerticies);
+			firstRoad = roadInfo;
 		}
-		else if (name == "road")
+		else if (name == "right")
 		{
-			roads = new List<List<Pair<Vector3>>>();
-			roads.Add(roadInfo.roadVerticies);
+			secondRoad = roadInfo;
 		}
 
-		Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, name, closedLoop);
+		//Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, name, closedLoop);
+
+		//Make the road template... just 2 points on either side of the center point
+		List<TemplatePoint> template = new List<TemplatePoint>();
+		template.Add(new TemplatePoint(new Vector2(extrude / 2, 0), 0));
+		template.Add(new TemplatePoint(new Vector2(-extrude / 2, 0), 1));
+
+		Mesh mesh = MeshMaker.ExtrudeShapeAlongPath(evenPoints, template, "road", closedLoop, false);
+
 		//GetComponent<MeshFilter>().sharedMesh = mesh;
 		//GetComponent<MeshCollider>().sharedMesh = mesh;
 
@@ -181,7 +193,9 @@ public class CurveImplementation : MonoBehaviour
 		road.AddComponent<MeshCollider>().sharedMesh = mesh;
 
 		MeshRenderer rend = road.AddComponent<MeshRenderer>();
-		rend.sharedMaterial = new Material(Shader.Find("Shader Graphs/road"));
+
+		Material material = (Material)Resources.Load("URP Shaders/Shader Graphs_road", typeof(Material));
+		rend.sharedMaterial = material;
 		rend.sharedMaterial.color = Color.white;
 
 		if (drawEdges)
@@ -207,7 +221,7 @@ public class CurveImplementation : MonoBehaviour
 		rend.sharedMaterial.color = Color.white;
 	}
 
-	private void DrawInner(List<List<ExtrudeShapePoint>> innerVerticies, bool closedLoop)
+	private void DrawInner(List<List<ShapePoint>> innerVerticies, bool closedLoop)
     {
 		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(innerVerticies, "inner", closedLoop, true);
 
@@ -222,7 +236,7 @@ public class CurveImplementation : MonoBehaviour
         rend.sharedMaterial.color = Color.white;
     }
 
-    private void DrawOuter(List<List<ExtrudeShapePoint>> outerVerticies, bool closedLoop)
+    private void DrawOuter(List<List<ShapePoint>> outerVerticies, bool closedLoop)
     {
 		Mesh mesh = MeshMaker.ExtrudeShapeMeshAlongPath(outerVerticies, "outer", closedLoop, true);
 
@@ -247,8 +261,10 @@ public class CurveImplementation : MonoBehaviour
 		evenlySpacedPoints.Add(prevPointOnPath);
 		float dstSinceLastPoint = 0;
 
-		float estimatedSegmentLength = GetDistanceOfCurve(points);
-		float estimatedSpacing = estimatedSegmentLength / points.Count;
+		//float estimatedSegmentLength = GetDistanceOfCurve(points);
+		//float estimatedSpacing = estimatedSegmentLength / points.Count;
+
+		float estimatedSpacing = MeshResolution;
 
 		//Skip first point
 		for (int i = 1; i < points.Count; i++)
@@ -291,7 +307,7 @@ public class CurveImplementation : MonoBehaviour
 	//Return pairs of points to contruct the mesh for the road
 	public RoadPointInfo GenerateTangentPointsFromPath(List<Vector3> path, float width, float edgeWidth, float thickness)
 	{
-		RoadPointInfo roadInfo = new RoadPointInfo();
+		RoadPointInfo roadInfo = new RoadPointInfo(path);
 
 		for (int i = 0; i < path.Count; i++)
 		{
@@ -314,18 +330,18 @@ public class CurveImplementation : MonoBehaviour
 			Pair<Vector3> roadPair = new Pair<Vector3>(path[i] + t * width / 2, path[i] - t * width / 2);
 
 			//right sidewalk shape
-			List<ExtrudeShapePoint> outer = new List<ExtrudeShapePoint>();
-			outer.Add(new ExtrudeShapePoint(path[i] - t * width / 2));
-			outer.Add(new ExtrudeShapePoint((path[i] - t * width / 2) + new Vector3(0, thickness, 0)));
-			outer.Add(new ExtrudeShapePoint((path[i] - t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
-			outer.Add(new ExtrudeShapePoint((path[i] - t * (width / 2 + edgeWidth))));
+			List<ShapePoint> outer = new List<ShapePoint>();
+			outer.Add(new ShapePoint(path[i] - t * width / 2));
+			outer.Add(new ShapePoint((path[i] - t * width / 2) + new Vector3(0, thickness, 0)));
+			outer.Add(new ShapePoint((path[i] - t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
+			outer.Add(new ShapePoint((path[i] - t * (width / 2 + edgeWidth))));
 
 			//left sidewalk shape
-			List<ExtrudeShapePoint> inner = new List<ExtrudeShapePoint>();
-			inner.Add(new ExtrudeShapePoint((path[i] + t * (width / 2 + edgeWidth))));
-			inner.Add(new ExtrudeShapePoint((path[i] + t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
-			inner.Add(new ExtrudeShapePoint((path[i] + t * width / 2) + new Vector3(0, thickness, 0)));
-			inner.Add(new ExtrudeShapePoint(path[i] + t * width / 2));
+			List<ShapePoint> inner = new List<ShapePoint>();
+			inner.Add(new ShapePoint((path[i] + t * (width / 2 + edgeWidth))));
+			inner.Add(new ShapePoint((path[i] + t * (width / 2 + edgeWidth)) + new Vector3(0, thickness, 0)));
+			inner.Add(new ShapePoint((path[i] + t * width / 2) + new Vector3(0, thickness, 0)));
+			inner.Add(new ShapePoint(path[i] + t * width / 2));
 			
 			roadInfo.roadVerticies.Add(roadPair);
 			roadInfo.innerVerticies.Add(inner);
@@ -472,5 +488,102 @@ public class CurveImplementation : MonoBehaviour
 		//debugPoints.Add(h);
 		//debugPoints.Add(highway[highwayPointIndex - 30].First);
 		//debugPoints.Add(road[roadPointIndex - 30].First);
+	}
+
+	public void CreateIntersection(RoadPointInfo roadA, RoadPointInfo roadB, int spacing)
+	{
+		debugPoints = new List<Vector3>();
+
+		var firstList = roadA.evenRoadPoints;
+		var secondList = roadB.evenRoadPoints;
+
+		int firstListIndex = 0;
+		int secondListIndex = 0;
+
+		float distance = float.MaxValue;
+
+		//For a curve, need to fine intersection with brute force
+		for (int i = 0; i < firstList.Count; i++)
+		{
+			for (int j = 0; j < secondList.Count; j++)
+			{
+				var d = Vector3.Distance(firstList[i], secondList[j]);
+				if (d < distance)
+				{
+					firstListIndex = i;
+					secondListIndex = j;
+					distance = d;
+				}
+			}
+		}
+
+		connections = new List<List<Vector3>>();
+
+		Pair<Vector3> sideA1;
+		Pair<Vector3> sideA2;
+		Pair<Vector3> sideB1;
+		Pair<Vector3> sideB2;
+
+		var firstListA = firstList.GetRange(0, firstListIndex);
+		firstListA.Reverse();
+		connections.Add(firstListA.Skip(spacing).ToList());
+
+		var firstSideA = roadA.roadVerticies.GetRange(0, firstListIndex);
+
+		var firstListB = firstList.GetRange(firstListIndex - 1, firstList.Count() - firstListIndex);
+		connections.Add(firstListB.Skip(spacing).ToList());
+
+		var secondListA = secondList.GetRange(0, secondListIndex);
+		secondListA.Reverse();
+		connections.Add(secondListA.Skip(spacing).ToList());
+		var secondListB = secondList.GetRange(secondListIndex - 1, secondList.Count() - secondListIndex);
+		connections.Add(secondListB.Skip(spacing).ToList());
+
+
+
+
+		//debugPoints.Add(FindIntersectionOfTwoLines(lineA, lineB));
+
+		LineEquation line1 = new LineEquation(firstListA[spacing].To2D(), firstListB[spacing].To2D());
+		LineEquation line2 = new LineEquation(secondListA[spacing].To2D(), secondListB[spacing].To2D());
+
+		debugPoints.Add(line1.GetIntersectionWithLine(line2).Value.To3D());
+
+
+	}
+
+	public Vector3 FindIntersectionOfTwoLines(Pair<Vector3> lineA, Pair<Vector3> lineB, float moveAmount = .1f)
+	{
+		float distance = float.MaxValue;
+		var intersectionPoint = new Vector3();
+
+		var pointOnA = lineA.First;
+		var pointOnB = lineB.First;
+
+		int escape = 0;
+
+		while (pointOnA != lineA.Second && escape != 1000000000)
+		{
+			while (pointOnB != lineB.Second && escape != 1000000000)
+			{
+				pointOnB = Vector3.MoveTowards(pointOnB, lineB.Second, moveAmount);
+
+				var d = Vector3.Distance(pointOnA, pointOnB);
+				if (d < distance)
+				{
+					intersectionPoint = Vector3.Lerp(pointOnA, pointOnB, .5f);
+					distance = d;
+				}
+
+				escape++;
+			}
+			escape++;
+			//Reset B to start
+			pointOnB = lineB.First;
+			//Move alone A
+			pointOnA = Vector3.MoveTowards(pointOnA, lineA.Second, moveAmount);
+		}
+		
+		return intersectionPoint;
 	}
 }

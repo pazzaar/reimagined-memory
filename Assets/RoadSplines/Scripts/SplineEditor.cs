@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.Linq;
 
 [CustomEditor(typeof(CurveImplementation))]
 public class SplineEditor : Editor
@@ -49,6 +50,17 @@ public class SplineEditor : Editor
 		if (GUILayout.Button("Highlight closest points"))
 		{
 			curve.DetectClosedPoints();
+		}
+
+		if (GUILayout.Button("Find closest points"))
+		{
+			//curve.CreateIntersection(curve.firstRoad , curve.secondRoad);
+			var i = 0;
+			foreach (var c in curve.connections)
+			{
+				curve.GenerateRoadMesh(c, $"connection {i}", false);
+				i++;
+			}
 		}
 	}
 }

@@ -70,6 +70,7 @@
     <Compile Include="Assets\RoadSplines\Scripts\RoadPointInfo.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\SplineEditor.cs" />
     <Compile Include="Assets\RoadSplines\Scripts\Utils.cs" />
+    <Compile Include="Assets\RoadSplines\Scripts\UvCalculator.cs" />
     <Compile Include="Assets\Scripts\CameraController.cs" />
     <Compile Include="Assets\Scripts\ModularCar\CarControllerV3.cs" />
     <Compile Include="Assets\Scripts\ModularCar\ForcePower.cs" />

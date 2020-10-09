@@ -74,7 +74,7 @@ public class MeshMaker : MonoBehaviour
 		return mesh;
 	}
 
-	public static Mesh ExtrudeShapeMeshAlongPath(List<List<ExtrudeShapePoint>> points, string meshName, bool loopPath = true, bool loopExtrudeShape = true)
+	public static Mesh ExtrudeShapeMeshAlongPath(List<List<ShapePoint>> points, string meshName, bool loopPath = true, bool loopExtrudeShape = true)
 	{
 		Mesh mesh = new Mesh();
 		mesh.name = meshName;
@@ -245,6 +245,113 @@ public class MeshMaker : MonoBehaviour
 		mesh.normals = norms.ToArray();
 		mesh.triangles = triangles.ToArray();
 		//mesh.uv = uvs.ToArray();
+		mesh.name = meshName;
+		mesh.RecalculateBounds();
+		mesh.RecalculateNormals();
+
+		return mesh;
+	}
+
+	public static Mesh ExtrudeShapeAlongPath(List<Vector3> points, List<TemplatePoint> template, string meshName, bool loopPath = true, bool loopExtrudeShape = true)
+	{
+		Mesh mesh = new Mesh();
+		mesh.name = meshName;
+
+		int closedAdjustment = loopPath ? 0 : 1;
+
+		List<int> triangles = new List<int>();
+		List<Vector3> verts = new List<Vector3>();
+		List<Vector2> uvs = new List<Vector2>();
+
+		for (int i = 0; i < points.Count(); i++)
+		{
+			float uvProgression = i / (float)(points.Count() - 1 - closedAdjustment);
+			int vertsIndex = (i * template.CountNormals());
+
+			for (int j = 0; j < template.Count(); j++)
+			{
+				/**Add verticies and UVs**/
+				//If its a hard normal, add another vertex + uv
+				if (!template[j].SoftNormal)
+				{
+					vertsIndex += 1;
+					verts.Add(points.GetShapePoint(i, template[j].Point));
+					uvs.Add(new Vector2(template[j].UMap, uvProgression));
+				}
+				verts.Add(points.GetShapePoint(i, template[j].Point));
+				uvs.Add(new Vector2(template[j].UMap, uvProgression));
+
+				/**Add triangles**/
+				//Make sure we're not on the last extrude shape in the path
+				if (i < points.Count - 1)
+				{
+					//Make sure we're not on the last point in the extrude shape
+					if (j < template.Count() - 1)
+					{
+						//First Triangle
+						triangles.Add(vertsIndex);
+						triangles.Add(vertsIndex + template.CountNormals());
+						triangles.Add(vertsIndex + 1);
+
+						//Second Triangle
+						triangles.Add(vertsIndex + 1);
+						triangles.Add(vertsIndex + template.CountNormals());
+						triangles.Add(vertsIndex + template.CountNormals() + 1);
+					}
+					//The extrude shape makes a closed shape (like a cylinder instead of a flat road or something)
+					//So connect it up to the first point in the extrude shape
+					else if (loopExtrudeShape)
+					{
+						//First triangle
+						triangles.Add(vertsIndex);
+						triangles.Add(vertsIndex + template.CountNormals());
+						triangles.Add(i * template.CountNormals() + 0);
+
+						//Second Triangle
+						triangles.Add(i * template.CountNormals() + 0);
+						triangles.Add(vertsIndex + template.CountNormals());
+						triangles.Add(i * template.CountNormals() + template.CountNormals() + 0);
+					}
+				}
+				//Do the last point to loop it
+				else if (loopPath)
+				{
+					if (j < template.Count() - 1)
+					{
+						var lastPointVertsIndex = vertsIndex - ((points.Count - 1) * template.CountNormals());
+						//First Triangle
+						triangles.Add(vertsIndex);
+						triangles.Add(lastPointVertsIndex); //makes it clearer
+						triangles.Add(vertsIndex + 1);
+
+						//Second Triangle
+						triangles.Add(vertsIndex + 1);
+						triangles.Add(lastPointVertsIndex); //makes it clearer
+						triangles.Add(lastPointVertsIndex + 1); //makes it clearer
+					}
+					else if (loopExtrudeShape)
+					{
+						var lastPointVertsIndex = vertsIndex - ((points.Count - 1) * template.CountNormals());
+						//First triangle
+						triangles.Add(vertsIndex);
+						triangles.Add(lastPointVertsIndex);
+						triangles.Add(i * template.CountNormals() + 0);
+
+						//Second triangle
+						triangles.Add(i * template.CountNormals() + 0);
+						triangles.Add(lastPointVertsIndex);
+						triangles.Add(0); //Back to the first vertex added
+					}
+				}
+
+				vertsIndex += 1;
+			}
+		}
+
+		mesh.vertices = verts.ToArray();
+		mesh.normals = new List<Vector3>().ToArray();
+		mesh.triangles = triangles.ToArray();
+		mesh.uv = uvs.ToArray();
 		mesh.name = meshName;
 		mesh.RecalculateBounds();
 		mesh.RecalculateNormals();

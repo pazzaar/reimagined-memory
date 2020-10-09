@@ -18,8 +18,11 @@ public class TrackCreator : MonoBehaviour
 	public List<Vector3> top = new List<Vector3>();
 	public List<Vector3> left = new List<Vector3>();
 
-	public int highwayIntersections = 1;
-	public float highwayMaxDeviation = 50;
+	public int highwayIntersections = 3;
+	public float highwayMaxDeviation = 400;
+
+	public int roadIntersections = 5;
+	public float roadMaxDeviation = 800;
 
 	static int GetMaxSegmentIndex(IEnumerable<Vector2> Curve)
 	{
@@ -63,10 +66,10 @@ public class TrackCreator : MonoBehaviour
 
 	public void GenerateRoadSection()
 	{
-		var bottom = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Bottom); //Get some points
+		var bottom = GenerateRandomRoadSection(trackWidth, trackHeight, roadIntersections, roadMaxDeviation, Side.Bottom); //Get some points
 		var right = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Right); //Get some points
-		var top = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Top); //Get some points
-		var left = GenerateRandomRoadSection(trackWidth, trackHeight, highwayIntersections, highwayMaxDeviation, Side.Left); //Get some points
+		var top = GenerateRandomRoadSection(trackWidth, trackHeight, roadIntersections, roadMaxDeviation, Side.Top); //Get some points
+		var left = GenerateRandomRoadSection(trackWidth, trackHeight, roadIntersections, roadMaxDeviation, Side.Left); //Get some points
 
 		this.bottom = bottom.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
 		this.right = right.Select(p => new Vector3(p.x - (trackWidth / 2), 0, p.y - (trackHeight / 2))).ToList();
