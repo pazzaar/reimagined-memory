@@ -20,6 +20,11 @@ namespace Utils
 		{
 			return "[" + First + "," + Second + "]";
 		}
+
+		public Pair<T> Flip()
+		{
+			return new Pair<T>(Second, First);
+		}
 	}
 
 	public struct Triple<T>
@@ -184,6 +189,13 @@ namespace Utils
 		{
 			var t = list.GetTangent(i);
 			var result = (list[i] + t * templatePoint.x) + new Vector3(0, templatePoint.y, 0);
+			return result;
+		}
+
+		public static Vector3 GetRoadPoint(this List<Vector3> list, int i, float pos)
+		{
+			var t = list.GetTangent(i);
+			var result = list[i] + t * pos;
 			return result;
 		}
 

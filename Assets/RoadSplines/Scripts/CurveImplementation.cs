@@ -16,8 +16,8 @@ public class CurveImplementation : MonoBehaviour
 	public List<List<Pair<Vector3>>> highways = new List<List<Pair<Vector3>>>();
 	public List<List<Pair<Vector3>>> roads = new List<List<Pair<Vector3>>>();
 
-	public RoadPointInfo firstRoad;
-	public RoadPointInfo secondRoad;
+	public List<Vector3> firstRoad;
+	public List<Vector3> secondRoad;
 
 	public bool drawEdges = true;
 	[Tooltip("The alpha is a catmull-rom spline specific thing, will make the curve's tangents more or less agressive")]
@@ -162,15 +162,15 @@ public class CurveImplementation : MonoBehaviour
 
 	public void GenerateRoadMesh(List<Vector3> evenPoints, string name, bool closedLoop)
 	{
-		var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
+		//var roadInfo = GenerateTangentPointsFromPath(evenPoints, extrude, edgeWidth, thickness);
 
 		if (name == "bottom")
 		{
-			firstRoad = roadInfo;
+			firstRoad = evenPoints;
 		}
 		else if (name == "right")
 		{
-			secondRoad = roadInfo;
+			secondRoad = evenPoints;
 		}
 
 		//Mesh mesh = MeshMaker.RoadMeshAlongPath(roadInfo.roadVerticies, name, closedLoop);
@@ -200,8 +200,8 @@ public class CurveImplementation : MonoBehaviour
 
 		if (drawEdges)
         {
-            DrawInner(roadInfo.innerVerticies, closedLoop);
-            DrawOuter(roadInfo.outerVerticies, closedLoop);
+           // DrawInner(roadInfo.innerVerticies, closedLoop);
+           // DrawOuter(roadInfo.outerVerticies, closedLoop);
         }
     }
 
@@ -490,12 +490,12 @@ public class CurveImplementation : MonoBehaviour
 		//debugPoints.Add(road[roadPointIndex - 30].First);
 	}
 
-	public void CreateIntersection(RoadPointInfo roadA, RoadPointInfo roadB, int spacing)
+	public void CreateIntersection(List<Vector3> roadA, List<Vector3> roadB, float width, int size)
 	{
 		debugPoints = new List<Vector3>();
 
-		var firstList = roadA.evenRoadPoints;
-		var secondList = roadB.evenRoadPoints;
+		var firstList = roadA;
+		var secondList = roadB;
 
 		int firstListIndex = 0;
 		int secondListIndex = 0;
@@ -519,37 +519,72 @@ public class CurveImplementation : MonoBehaviour
 
 		connections = new List<List<Vector3>>();
 
-		Pair<Vector3> sideA1;
-		Pair<Vector3> sideA2;
-		Pair<Vector3> sideB1;
-		Pair<Vector3> sideB2;
-
 		var firstListA = firstList.GetRange(0, firstListIndex);
 		firstListA.Reverse();
-		connections.Add(firstListA.Skip(spacing).ToList());
-
-		var firstSideA = roadA.roadVerticies.GetRange(0, firstListIndex);
-
+		connections.Add(firstListA.Skip(size).ToList());
 		var firstListB = firstList.GetRange(firstListIndex - 1, firstList.Count() - firstListIndex);
-		connections.Add(firstListB.Skip(spacing).ToList());
+		connections.Add(firstListB.Skip(size).ToList());
+
+		//var lineA1 = new Pair<Vector3>(firstListA.GetRoadPoint(size, -width / 2), firstListB.GetRoadPoint(size, width / 2));
+		//var lineA2 = new Pair<Vector3>(firstListA.GetRoadPoint(size, width / 2), firstListB.GetRoadPoint(size, -width / 2));
 
 		var secondListA = secondList.GetRange(0, secondListIndex);
 		secondListA.Reverse();
-		connections.Add(secondListA.Skip(spacing).ToList());
+		connections.Add(secondListA.Skip(size).ToList());
 		var secondListB = secondList.GetRange(secondListIndex - 1, secondList.Count() - secondListIndex);
-		connections.Add(secondListB.Skip(spacing).ToList());
+		connections.Add(secondListB.Skip(size).ToList());
 
+		//var lineB1 = new Pair<Vector3>(secondListA.GetRoadPoint(size, -width / 2), secondListB.GetRoadPoint(size, width / 2));
+		//var lineB2 = new Pair<Vector3>(secondListA.GetRoadPoint(size, width / 2), secondListB.GetRoadPoint(size, -width / 2));
 
+		var side1 = new Pair<Vector3>(firstListA.GetRoadPoint(size, width / 2), firstListA.GetRoadPoint(size, -width / 2));
+		var side3 = new Pair<Vector3>(firstListB.GetRoadPoint(size, width / 2), firstListB.GetRoadPoint(size, -width / 2));
 
+		var side4 = new Pair<Vector3>(secondListA.GetRoadPoint(size, width / 2), secondListA.GetRoadPoint(size, -width / 2));
+		var side2 = new Pair<Vector3>(secondListB.GetRoadPoint(size, width / 2), secondListB.GetRoadPoint(size, -width / 2));
 
-		//debugPoints.Add(FindIntersectionOfTwoLines(lineA, lineB));
+		var outerPoints = new List<Pair<Vector3>>();
 
-		LineEquation line1 = new LineEquation(firstListA[spacing].To2D(), firstListB[spacing].To2D());
-		LineEquation line2 = new LineEquation(secondListA[spacing].To2D(), secondListB[spacing].To2D());
+		outerPoints.Add(side1);
 
-		debugPoints.Add(line1.GetIntersectionWithLine(line2).Value.To3D());
+		//debugPoints.Add(side2.First);
+		//debugPoints.Add(side4.Second);
 
+		outerPoints.Add(side2);
+		outerPoints.Add(side3);
+		outerPoints.Add(side4);
 
+		LineEquation line1 = new LineEquation(side1.First.To2D(), side3.Second.To2D());
+		LineEquation line2 = new LineEquation(side1.Second.To2D(), side3.First.To2D());
+		LineEquation line3 = new LineEquation(side2.First.To2D(), side4.Second.To2D());
+		LineEquation line4 = new LineEquation(side2.Second.To2D(), side4.First.To2D());
+
+		var innerPoints = new List<Vector3>();
+
+		innerPoints.Add(line1.GetIntersectionWithLine(line3).Value.To3D());
+		innerPoints.Add(line2.GetIntersectionWithLine(line3).Value.To3D());
+		innerPoints.Add(line2.GetIntersectionWithLine(line4).Value.To3D());
+		innerPoints.Add(line1.GetIntersectionWithLine(line4).Value.To3D());
+
+		//debugPoints.Add(line1.GetIntersectionWithLine(line3).Value.To3D());
+		//debugPoints.Add(line1.GetIntersectionWithLine(line4).Value.To3D());
+		//debugPoints.Add(line2.GetIntersectionWithLine(line3).Value.To3D());
+		//debugPoints.Add(line2.GetIntersectionWithLine(line4).Value.To3D());
+
+		var name = "fourwayintersection";
+
+		Mesh mesh = MeshMaker.FourWayIntersection(outerPoints, innerPoints, name);
+
+		DestroyImmediate(GameObject.Find(name));
+		GameObject intersection = new GameObject(name);
+		intersection.transform.SetParent(transform);
+		intersection.transform.position = transform.position;
+		intersection.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+		MeshRenderer rend = intersection.AddComponent<MeshRenderer>();
+		Material material = (Material)Resources.Load("Materials/test_mat", typeof(Material));
+		rend.sharedMaterial = material;
+		rend.sharedMaterial.color = Color.white;
 	}
 
 	public Vector3 FindIntersectionOfTwoLines(Pair<Vector3> lineA, Pair<Vector3> lineB, float moveAmount = .1f)

@@ -358,4 +358,67 @@ public class MeshMaker : MonoBehaviour
 
 		return mesh;
 	}
+
+	public static Mesh FourWayIntersection(List<Pair<Vector3>> outerPoints, List<Vector3> innerPoints, string name)
+	{
+		Mesh mesh = new Mesh();
+
+		List<int> triangles = new List<int>();
+		List<Vector3> verts = new List<Vector3>();
+		List<Vector3> norms = new List<Vector3>();
+		List<Vector2> uvs = new List<Vector2>();
+
+
+		for (int i = 0; i < 4; i++)
+		{
+			verts.Add(innerPoints[i]);
+			norms.Add(Vector3.up);
+		}
+
+		triangles.Add(0);
+		triangles.Add(2);
+		triangles.Add(3);
+
+		triangles.Add(0);
+		triangles.Add(1);
+		triangles.Add(2);
+
+		int innerVertsIndex = 4;
+		int outerVertsIndex = 0;
+
+		for (int i = 0; i < 4; i++)
+		{
+			//First vertex + uvs and norms
+			verts.Add(outerPoints[i].First);
+			norms.Add(Vector3.up);
+
+			//Second vertex + uvs and norms
+			verts.Add(outerPoints[i].Second);
+			norms.Add(Vector3.up);
+
+			triangles.Add(innerVertsIndex + outerVertsIndex);
+			triangles.Add((i + 1) % 4);
+			triangles.Add(i);
+
+			triangles.Add(innerVertsIndex + outerVertsIndex);
+			triangles.Add(innerVertsIndex + outerVertsIndex + 1);
+			triangles.Add((i + 1) % 4);
+
+			triangles.Add(innerVertsIndex + outerVertsIndex + 1);
+			triangles.Add(innerVertsIndex + ((outerVertsIndex + 2) % 8));
+			triangles.Add((i + 1) % 4);
+
+			outerVertsIndex += 2;
+		}
+
+		mesh.vertices = verts.ToArray();
+		mesh.normals = norms.ToArray();
+		mesh.triangles = triangles.ToArray();
+		mesh.uv = UvCalculator.CalculateUVs(verts.ToArray(), 100);
+		mesh.name = name;
+		mesh.RecalculateBounds();
+		mesh.RecalculateNormals();
+
+		return mesh;
+	}
 }

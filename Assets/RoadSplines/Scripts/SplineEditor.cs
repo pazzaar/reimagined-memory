@@ -54,7 +54,7 @@ public class SplineEditor : Editor
 
 		if (GUILayout.Button("Find closest points"))
 		{
-			//curve.CreateIntersection(curve.firstRoad , curve.secondRoad);
+			curve.CreateIntersection(curve.firstRoad, curve.secondRoad, curve.extrude, 8);
 			var i = 0;
 			foreach (var c in curve.connections)
 			{
